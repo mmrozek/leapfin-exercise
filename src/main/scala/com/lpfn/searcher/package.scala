@@ -5,18 +5,17 @@ import com.lpfn.searcher.SupervisorWorkerProtocol.WorkerResult
 package object searcher {
 
   object WorkSupervisorProtocol {
-    case class SpawnWorkers(no: Int)
-    case object WorkersSpawned
-    case class Report(report: Map[String, WorkerResult])
+    final case class SpawnWorkers(no: Int)
+    final case class Report(report: Map[String, WorkerResult])
   }
 
   object SupervisorWorkerProtocol {
-    case object Run
+    final case object Run
 
-    sealed trait WorkerResult
-    case object Timeout extends WorkerResult
-    case class Success(elapsed: Long, byte_cnt: Long) extends WorkerResult
-    case class Failure(details: String) extends WorkerResult
+    sealed trait WorkerResult extends Product with Serializable
+    final case object Timeout extends WorkerResult
+    final case class Success(elapsed: Long, byte_cnt: Long) extends WorkerResult
+    final case class Failure(details: String) extends WorkerResult
   }
 
 }

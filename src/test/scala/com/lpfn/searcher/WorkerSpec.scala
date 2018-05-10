@@ -3,7 +3,7 @@ package com.lpfn.searcher
 import akka.pattern.ask
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestKit}
-import akka.util.Timeout
+import akka.util.{Timeout  => AkkaTimeout}
 import com.lpfn.searcher.SupervisorWorkerProtocol._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import org.scalatest.concurrent.ScalaFutures
@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 class WorkerSpec extends TestKit(ActorSystem("WorkerSpec")) with WordSpecLike with Matchers
   with BeforeAndAfterAll with ScalaFutures {
 
-  implicit val timeout = Timeout(5 seconds)
+  implicit val timeout = AkkaTimeout(5 seconds)
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)
@@ -36,9 +36,7 @@ class WorkerSpec extends TestKit(ActorSystem("WorkerSpec")) with WordSpecLike wi
 
       val response = worker ? Run
 
-      response.futureValue should matchPattern {
-        case Failure("End of the stream") =>
-      }
+      response.futureValue should be (Failure("End of the stream"))
     }
 
     "Return a timeout if string `lpfn` couldn't be found on time" in {
@@ -47,9 +45,7 @@ class WorkerSpec extends TestKit(ActorSystem("WorkerSpec")) with WordSpecLike wi
 
       val response = worker ? Run
 
-      response.futureValue should matchPattern {
-        case Timeout =>
-      }
+      response.futureValue should be (Timeout)
     }
 
   }

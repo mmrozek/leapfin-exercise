@@ -6,6 +6,7 @@ import akka.util.Timeout
 import com.lpfn.searcher.SupervisorWorkerProtocol.Success
 import com.lpfn.searcher.WorkSupervisorProtocol.{Report, SpawnWorkers}
 import com.lpfn.searcher.{WorkSupervisor, Worker}
+import com.lpfn.utils.ConsoleParser
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -13,39 +14,41 @@ import scala.util.Random
 
 object Main extends App {
 
-  val system: ActorSystem = ActorSystem("lpfn")
+  ConsoleParser.parseArguments(args.toList) match {
+    case Right(timeout) =>
 
+      System.out.println(s"App started with timeout=$timeout")
 
-  val stringGen: () => Stream[Char] = () => Random.alphanumeric
+      val system: ActorSystem = ActorSystem("lpfn")
 
-  val workSupervisor = system.actorOf(WorkSupervisor.props(
-    Worker.props(10 seconds, stringGen)), "supervisor"
-  )
+      val stringGen: () => Stream[Char] = () => Random.alphanumeric
 
-  implicit val askTimeout = Timeout(30 seconds)
-  val result = workSupervisor ? SpawnWorkers(10)
+      val workSupervisor = system.actorOf(WorkSupervisor.props(
+        Worker.props(timeout seconds, stringGen)), "supervisor"
+      )
 
-  val report = result.map {
-    case Report(r) =>
-      r.partition {
-        case (_, Success(_, _)) => true
-        case _ => false
+      implicit val askTimeout = Timeout(timeout+15 seconds)
+
+      val result = workSupervisor ? SpawnWorkers(10)
+
+      val report = result.map {
+        case Report(r) =>
+          r.partition {
+            case (_, Success(_, _)) => true
+            case _ => false
+          }
       }
-  }
 
-  report.onComplete { _ =>
-    system.terminate()
-    Await.result(system.whenTerminated, 30 seconds)
-  }
+      val (correct, failed) = Await.result(report, askTimeout.duration)
 
-  val (correct, failed) = Await.result(report, askTimeout.duration)
+      System.out.println("REPORT:")
+      System.out.println(correct.toList.sortBy(_._2.asInstanceOf[Success].elapsed).mkString("\n"))
+      System.err.println(failed.toList.sortBy(_._1).mkString("\n"))
 
-  System.out.println("REPORT:")
-  System.out.println(correct.toList.sortBy(_._2.asInstanceOf[Success].elapsed).mkString("\n"))
-  System.out.println(failed.toList.sortBy(_._1).mkString("\n"))
-
-  scala.sys.addShutdownHook {
-    system.terminate()
-    Await.result(system.whenTerminated, 30 seconds)
+      scala.sys.addShutdownHook {
+        system.terminate()
+        Await.result(system.whenTerminated, 30 seconds)
+      }
+    case Left(details) => System.out.println(details)
   }
 }

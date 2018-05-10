@@ -26,14 +26,6 @@ class WorkSupervisorSpec extends TestKit(ActorSystem("WorkSupervisorSpec")) with
   }
 
   "WorkSupervisor actor" must {
-    "Spawn workers" in {
-      val supervisor = TestActorRef(new WorkSupervisor(Props.empty))
-      val workersCount = 3
-
-      supervisor ! SpawnWorkers(workersCount)
-
-      supervisor.children.size should be (workersCount)
-    }
 
     "Send Run command to spawned workers" in {
       val probe = TestProbe("workers_probe")
@@ -43,8 +35,7 @@ class WorkSupervisorSpec extends TestKit(ActorSystem("WorkSupervisorSpec")) with
 
       supervisor ! SpawnWorkers(workersCount)
 
-      probe.expectMsg(Run)
-      probe.expectMsg(Run)
+      probe.expectMsgAllOf(Run, Run)
     }
 
     "Collect success responses and return report" in {
