@@ -1,7 +1,8 @@
 package com.lpfn
 
-import com.lpfn.searcher.WorkToDo
-import com.lpfn.utils.{ConsoleParser, ReportWriter}
+import com.lpfn.searcher.WorkToDo.doTheJob
+import com.lpfn.utils.ConsoleParser
+import com.lpfn.utils.ReportWriter.writeReport
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import scala.concurrent.duration._
@@ -13,12 +14,12 @@ object Main extends App {
     case Right(timeout) =>
       System.out.println(s"App started with timeout = $timeout")
 
-      val stringGen: () => Stream[Char] = () => Random.alphanumeric
+      val streamGen: () => Stream[Char] = () => Random.alphanumeric
 
-      val tasks = (1 to 5).map(_ => WorkToDo.doTheJob(timeout seconds, stringGen()))
-      val value = Task.gatherUnordered(tasks).map(_.toList).runSyncUnsafe(timeout + 5 seconds)
+      val tasks = (1 to 5).map(_ => doTheJob(timeout seconds, streamGen()))
+      val value = Task.gatherUnordered(tasks).runSyncUnsafe(timeout + 5 seconds)
 
-      ReportWriter.writeReport(value)
+      writeReport(value)
 
     case Left(details) => System.out.println(details)
   }

@@ -13,5 +13,7 @@ object WorkToDo {
         val time = System.currentTimeMillis() - start
         Success(time, x.last._2 + 1)
       }.getOrElse(Failure("End of the stream"))
-    }.timeoutTo(timeout, Task(Timeout))
+    }.timeoutTo(timeout, Task(Timeout)).onErrorRecover{
+      case err => Failure(err.getMessage)
+    }
 }

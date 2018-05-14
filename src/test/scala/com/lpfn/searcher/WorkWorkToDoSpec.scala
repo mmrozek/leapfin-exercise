@@ -27,6 +27,13 @@ class WorkWorkToDoSpec extends WordSpecLike with Matchers
       WorkToDo.doTheJob(timeout, input()).runSyncUnsafe(monixTimeout) should be (Failure("End of the stream"))
     }
 
+    "Return a failure if exception occurs" in {
+      val exceptionMsg = "Unexpected exception"
+      val input: () => Stream[Char] = () => throw new IllegalStateException(exceptionMsg)
+
+      WorkToDo.doTheJob(timeout, input()).runSyncUnsafe(monixTimeout) should be (Failure(exceptionMsg))
+    }
+
     "Return a timeout if string `lpfn` couldn't be found on time" in {
       val input = () => Stream.from(0).flatMap(_.toString)
 
